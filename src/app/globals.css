@@ -1,26 +1,101 @@
 @import "tailwindcss";
 
-:root {
-  --background: #ffffff;
-  --foreground: #171717;
+@theme {
+  /* Brand colours */
+  --color-purple: #3b1f5e;
+  --color-purple-light: #4e2a7a;
+  --color-plum: #6b2d6e;
+  --color-lavender: #c4a7d4;
+  --color-lavender-light: #e8dff0;
+  --color-gold: #c9a84c;
+  --color-gold-light: #e0c06a;
+  --color-cream: #faf7f4;
+  --color-warm-white: #ffffff;
+  --color-ink: #1a1025;
+  --color-muted: #7a6b8a;
+
+  /* Typography */
+  --font-heading: "Cormorant Garamond", Georgia, serif;
+  --font-body: "Inter", system-ui, sans-serif;
+
+  /* Spacing */
+  --spacing-section: 5rem;
 }
 
-@theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
-}
+@layer base {
+  html {
+    scroll-behavior: smooth;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
+  body {
+    background-color: var(--color-cream);
+    color: var(--color-ink);
+    font-family: var(--font-body);
+  }
+
+  h1, h2, h3, h4, h5, h6 {
+    font-family: var(--font-heading);
+  }
+
+  *:focus-visible {
+    outline: 2px solid var(--color-gold);
+    outline-offset: 3px;
+    border-radius: 4px;
   }
 }
 
-body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+@layer utilities {
+  .font-heading {
+    font-family: var(--font-heading);
+  }
+
+  .font-body {
+    font-family: var(--font-body);
+  }
+
+  .text-purple { color: var(--color-purple); }
+  .text-plum { color: var(--color-plum); }
+  .text-lavender { color: var(--color-lavender); }
+  .text-gold { color: var(--color-gold); }
+  .text-cream { color: var(--color-cream); }
+  .text-ink { color: var(--color-ink); }
+  .text-muted { color: var(--color-muted); }
+
+  .bg-purple { background-color: var(--color-purple); }
+  .bg-purple-light { background-color: var(--color-purple-light); }
+  .bg-plum { background-color: var(--color-plum); }
+  .bg-lavender { background-color: var(--color-lavender); }
+  .bg-lavender-light { background-color: var(--color-lavender-light); }
+  .bg-gold { background-color: var(--color-gold); }
+  .bg-cream { background-color: var(--color-cream); }
+  .bg-ink { background-color: var(--color-ink); }
+
+  .border-lavender { border-color: var(--color-lavender); }
+  .border-gold { border-color: var(--color-gold); }
+  .border-purple { border-color: var(--color-purple); }
+
+  /* Section spacing */
+  .section-padding {
+    padding-top: var(--spacing-section);
+    padding-bottom: var(--spacing-section);
+  }
+
+  /* Soft card shadow */
+  .shadow-soft {
+    box-shadow: 0 2px 20px 0 rgba(59, 31, 94, 0.08);
+  }
+
+  .shadow-soft-lg {
+    box-shadow: 0 4px 40px 0 rgba(59, 31, 94, 0.12);
+  }
+
+  /* Image reveal animation */
+  .image-cover {
+    object-fit: cover;
+    object-position: center top;
+    width: 100%;
+    height: 100%;
+  }
 }
