@@ -3,6 +3,9 @@
 import Link from "next/link";
 import Image from "next/image";
 import { usePathname } from "next/navigation";
+import { MapPin, ExternalLink } from "lucide-react";
+
+const GOOGLE_MAPS_URL = "https://maps.app.goo.gl/cYdLK7PJLBu15iGF7";
 
 const footerLinks = [
   { href: "/", label: "Home" },
@@ -19,7 +22,6 @@ export default function Footer() {
   if (pathname.startsWith("/admin")) {
     return null;
   }
-
 
   return (
     <footer className="bg-ink text-cream">
@@ -55,7 +57,7 @@ export default function Footer() {
           {/* Contact */}
           <div>
             <h3 className="font-heading text-gold text-lg font-medium mb-5 tracking-wide">
-              Contact
+              Contact &amp; Location
             </h3>
             <address className="not-italic space-y-2.5 font-body text-sm text-lavender">
               <p>
@@ -74,8 +76,29 @@ export default function Footer() {
                   Sarpongkesh@gmail.com
                 </a>
               </p>
-              <p>Sowutoum, Ghana</p>
-              <div className="pt-1">
+              <p>
+                <a
+                  href={GOOGLE_MAPS_URL}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="hover:text-gold transition-colors inline-flex items-center gap-1.5 font-medium"
+                >
+                  <MapPin size={14} className="text-gold" />
+                  <span>Sowutoum, Ghana</span>
+                  <ExternalLink size={12} className="opacity-70" />
+                </a>
+              </p>
+              <div className="pt-2">
+                <a
+                  href={GOOGLE_MAPS_URL}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-flex items-center gap-1.5 text-xs text-gold hover:underline font-semibold"
+                >
+                  Get Directions on Google Maps ↗
+                </a>
+              </div>
+              <div className="pt-2 text-xs text-lavender/80">
                 <p>Mon – Sat: 9:00 AM – 8:00 PM</p>
                 <p>Sunday: Closed</p>
               </div>
