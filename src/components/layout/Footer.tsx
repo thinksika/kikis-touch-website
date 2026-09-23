@@ -1,5 +1,8 @@
+"use client";
+
 import Link from "next/link";
 import Image from "next/image";
+import { usePathname } from "next/navigation";
 
 const footerLinks = [
   { href: "/", label: "Home" },
@@ -10,7 +13,13 @@ const footerLinks = [
 ];
 
 export default function Footer() {
+  const pathname = usePathname();
   const year = new Date().getFullYear();
+
+  if (pathname.startsWith("/admin")) {
+    return null;
+  }
+
 
   return (
     <footer className="bg-ink text-cream">

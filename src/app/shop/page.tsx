@@ -1,14 +1,25 @@
-import type { Metadata } from "next";
-import { products } from "@/data/products";
-import ProductGrid from "@/components/shop/ProductGrid";
+'use client';
 
-export const metadata: Metadata = {
-  title: "Shop Hair & Beauty Products | Kiki's Touch Beauty Salon",
-  description:
-    "Shop quality hair and beauty products at Kiki's Touch Beauty Salon. Edge control, shampoo & conditioner, hair growth oil, accessories and more.",
-};
+import { useEffect, useState } from 'react';
+import { getProductsFromSupabase } from '@/lib/supabase-data';
+import { products as staticProducts } from '@/data/products';
+import { Product } from '@/types';
+import ProductGrid from '@/components/shop/ProductGrid';
+import { RefreshCw } from 'lucide-react';
 
 export default function ShopPage() {
+  const [productsList, setProductsList] = useState<Product[]>(staticProducts);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    async function loadData() {
+      const data = await getProductsFromSupabase();
+      setProductsList(data);
+      setLoading(false);
+    }
+    loadData();
+  }, []);
+
   return (
     <div className="pt-24 lg:pt-32 pb-20">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -25,7 +36,13 @@ export default function ShopPage() {
           </p>
         </div>
 
-        <ProductGrid products={products} />
+        {loading ? (
+          <div className="flex justify-center py-16">
+            <RefreshCw className="w-8 h-8 text-gold animate-spin" />
+          </div>
+        ) : (
+          <ProductGrid products={productsList} />
+        )}
       </div>
     </div>
   );

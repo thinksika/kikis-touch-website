@@ -2,10 +2,12 @@
 
 import { useState, useEffect } from "react";
 import { useSearchParams } from "next/navigation";
-import { services } from "@/data/services";
-import { BookingFormData } from "@/types";
+import { getServicesFromSupabase } from "@/lib/supabase-data";
+import { services as staticServices } from "@/data/services";
+import { Service, BookingFormData } from "@/types";
+import { supabase } from "@/lib/supabase";
 import { buildBookingMessage, openWhatsApp } from "@/lib/whatsapp";
-import { Send } from "lucide-react";
+import { Send, RefreshCw } from "lucide-react";
 
 const timeSlots = [
   "9:00 AM", "10:00 AM", "11:00 AM", "12:00 PM",
@@ -26,6 +28,16 @@ export default function BookingForm() {
   const searchParams = useSearchParams();
   const [form, setForm] = useState<BookingFormData>(initialForm);
   const [errors, setErrors] = useState<Partial<BookingFormData>>({});
+  const [servicesList, setServicesList] = useState<Service[]>(staticServices);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+
+  useEffect(() => {
+    async function fetchServices() {
+      const data = await getServicesFromSupabase();
+      setServicesList(data);
+    }
+    fetchServices();
+  }, []);
 
   // Pre-select service from URL query param
   useEffect(() => {
@@ -56,9 +68,29 @@ export default function BookingForm() {
     }
   }
 
-  function handleSubmit(e: React.FormEvent) {
+  async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     if (!validate()) return;
+
+    setIsSubmitting(true);
+    try {
+      // Save booking to Supabase database so admin receives it in dashboard
+      await supabase.from("bookings").insert({
+        customer_name: form.fullName.trim(),
+        customer_phone: form.phone.trim(),
+        service_name: form.service,
+        booking_date: form.date,
+        booking_time: form.time,
+        notes: form.note.trim() || null,
+        deposit_status: "pending",
+        status: "pending",
+      });
+    } catch (err) {
+      console.error("Booking database insert error:", err);
+    } finally {
+      setIsSubmitting(false);
+    }
+
     const message = buildBookingMessage(form);
     openWhatsApp(message);
   }
@@ -136,7 +168,7 @@ export default function BookingForm() {
           aria-invalid={!!errors.service}
         >
           <option value="">Select a service</option>
-          {services.map((s) => (
+          {servicesList.map((s) => (
             <option key={s.id} value={s.name}>
               {s.name}
             </option>
@@ -224,10 +256,20 @@ export default function BookingForm() {
       <div className="pt-2">
         <button
           type="submit"
+          disabled={isSubmitting}
           className="w-full flex items-center justify-center gap-2.5 bg-purple text-white font-body font-semibold py-4 rounded-full hover:bg-purple-light active:scale-[0.98] transition-all duration-200"
         >
-          <Send size={17} />
-          Send via WhatsApp
+          {isSubmitting ? (
+            <>
+              <RefreshCw size={17} className="animate-spin" />
+              Processing...
+            </>
+          ) : (
+            <>
+              <Send size={17} />
+              Send via WhatsApp
+            </>
+          )}
         </button>
         <p className="font-body text-xs text-muted text-center mt-3">
           A GH₵50 deposit is required to secure your appointment.

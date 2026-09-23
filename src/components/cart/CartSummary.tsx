@@ -3,16 +3,52 @@
 import { useState } from "react";
 import { useCart } from "@/context/CartContext";
 import { calculateCartTotal, buildOrderMessage, openWhatsApp } from "@/lib/whatsapp";
-import { MessageCircle, CheckCircle } from "lucide-react";
+import { supabase } from "@/lib/supabase";
+import { MessageCircle, CheckCircle, RefreshCw } from "lucide-react";
 
 export default function CartSummary() {
   const { items } = useCart();
   const [sent, setSent] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   const total = calculateCartTotal(items);
-  const allHavePrices = items.every((i) => i.product.price !== null);
+  const allHavePrices = items.every((i) => i.product.price !== null && i.product.price !== undefined);
 
-  function handleOrder() {
+  async function handleOrder() {
+    if (items.length === 0) return;
+    setIsSubmitting(true);
+
+    try {
+      // Create order record in Supabase
+      const { data: orderData, error: orderError } = await supabase
+        .from("orders")
+        .insert({
+          customer_name: "Customer (WhatsApp)",
+          customer_phone: "WhatsApp Contact",
+          total_amount: total || 0,
+          status: "pending",
+        })
+        .select("id")
+        .single();
+
+      if (!orderError && orderData?.id) {
+        // Insert order items preserving historic product name and unit price
+        const orderItemsPayload = items.map((item) => ({
+          order_id: orderData.id,
+          product_id: typeof item.product.id === "string" && item.product.id.includes("-") ? item.product.id : null,
+          product_name: item.product.name,
+          unit_price: item.product.price || 0,
+          quantity: item.quantity,
+        }));
+
+        await supabase.from("order_items").insert(orderItemsPayload);
+      }
+    } catch (err) {
+      console.error("Order database insert error:", err);
+    } finally {
+      setIsSubmitting(false);
+    }
+
     const message = buildOrderMessage(items);
     openWhatsApp(message);
     setSent(true);
@@ -42,10 +78,20 @@ export default function CartSummary() {
       {/* WhatsApp order button */}
       <button
         onClick={handleOrder}
+        disabled={isSubmitting}
         className="w-full flex items-center justify-center gap-2.5 bg-[#25D366] text-white font-body font-semibold py-3.5 rounded-full hover:bg-[#1fbc5a] active:scale-[0.98] transition-all duration-200"
       >
-        <MessageCircle size={18} />
-        Order via WhatsApp
+        {isSubmitting ? (
+          <>
+            <RefreshCw size={18} className="animate-spin" />
+            <span>Processing Order...</span>
+          </>
+        ) : (
+          <>
+            <MessageCircle size={18} />
+            <span>Order via WhatsApp</span>
+          </>
+        )}
       </button>
 
       {/* Confirmation state */}

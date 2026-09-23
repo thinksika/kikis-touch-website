@@ -1,14 +1,25 @@
-import type { Metadata } from "next";
-import { services } from "@/data/services";
-import ServiceCard from "@/components/services/ServiceCard";
+'use client';
 
-export const metadata: Metadata = {
-  title: "Our Services | Kiki's Touch Beauty Salon",
-  description:
-    "Explore our professional beauty services including knotless braids, cornrows, braided styles, wig installation, hair treatments and locs styling.",
-};
+import { useEffect, useState } from 'react';
+import { getServicesFromSupabase } from '@/lib/supabase-data';
+import { services as staticServices } from '@/data/services';
+import { Service } from '@/types';
+import ServiceCard from '@/components/services/ServiceCard';
+import { RefreshCw } from 'lucide-react';
 
 export default function ServicesPage() {
+  const [servicesList, setServicesList] = useState<Service[]>(staticServices);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    async function loadData() {
+      const data = await getServicesFromSupabase();
+      setServicesList(data);
+      setLoading(false);
+    }
+    loadData();
+  }, []);
+
   return (
     <div className="pt-24 lg:pt-32 pb-20">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -26,12 +37,17 @@ export default function ServicesPage() {
           </p>
         </div>
 
-        {/* Grid */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5 lg:gap-6">
-          {services.map((service, i) => (
-            <ServiceCard key={service.id} service={service} priority={i < 3} />
-          ))}
-        </div>
+        {loading ? (
+          <div className="flex justify-center py-16">
+            <RefreshCw className="w-8 h-8 text-gold animate-spin" />
+          </div>
+        ) : (
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5 lg:gap-6">
+            {servicesList.map((service, i) => (
+              <ServiceCard key={service.id} service={service} priority={i < 3} />
+            ))}
+          </div>
+        )}
       </div>
     </div>
   );
