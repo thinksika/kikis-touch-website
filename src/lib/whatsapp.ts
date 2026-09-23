@@ -1,16 +1,34 @@
 import { CartItem, BookingFormData } from "@/types";
 
-export const WHATSAPP_NUMBER = "233543603627";
-export const WHATSAPP_BASE = `https://wa.me/${WHATSAPP_NUMBER}`;
+export const DEFAULT_WHATSAPP_NUMBER = "233543603627";
+export const WHATSAPP_NUMBER = DEFAULT_WHATSAPP_NUMBER;
+export const WHATSAPP_BASE = `https://wa.me/${DEFAULT_WHATSAPP_NUMBER}`;
 
-export function openWhatsApp(message: string) {
-  const encoded = encodeURIComponent(message);
-  window.open(`${WHATSAPP_BASE}?text=${encoded}`, "_blank", "noopener,noreferrer");
+export function formatWhatsAppLink(phone?: string): string {
+  if (!phone) return `https://wa.me/${DEFAULT_WHATSAPP_NUMBER}`;
+  const cleanPhone = phone.replace(/[^0-9]/g, "");
+  const fullPhone = cleanPhone.startsWith("233")
+    ? cleanPhone
+    : cleanPhone.startsWith("0")
+    ? `233${cleanPhone.slice(1)}`
+    : cleanPhone || DEFAULT_WHATSAPP_NUMBER;
+  return `https://wa.me/${fullPhone}`;
 }
 
-export function buildBookingMessage(data: BookingFormData): string {
+export function openWhatsApp(message: string, targetPhone?: string) {
+  const baseUrl = formatWhatsAppLink(targetPhone);
+  const encoded = encodeURIComponent(message);
+  window.open(`${baseUrl}?text=${encoded}`, "_blank", "noopener,noreferrer");
+}
+
+export function buildBookingMessage(
+  data: BookingFormData,
+  businessName = "Kiki's Touch Beauty Salon",
+  depositAmount = 50,
+  currency = "GH₵"
+): string {
   const lines = [
-    "Hello Kiki's Touch Beauty Salon,",
+    `Hello ${businessName},`,
     "",
     "I would like to request an appointment.",
     "",
@@ -27,7 +45,7 @@ export function buildBookingMessage(data: BookingFormData): string {
 
   lines.push(
     "",
-    "I understand that a GH₵50 deposit is required to secure my appointment.",
+    `I understand that a ${currency}${depositAmount} deposit is required to secure my appointment.`,
     "",
     "Please confirm availability."
   );
@@ -35,8 +53,12 @@ export function buildBookingMessage(data: BookingFormData): string {
   return lines.join("\n");
 }
 
-export function buildOrderMessage(items: CartItem[]): string {
-  const allHavePrices = items.every((item) => item.product.price !== null);
+export function buildOrderMessage(
+  items: CartItem[],
+  businessName = "Kiki's Touch Beauty Salon",
+  currency = "GH₵"
+): string {
+  const allHavePrices = items.every((item) => item.product.price !== null && item.product.price !== undefined);
 
   const itemLines = items.map((item, index) => {
     const line = `${index + 1}. ${item.product.name} × ${item.quantity}`;
@@ -48,13 +70,13 @@ export function buildOrderMessage(items: CartItem[]): string {
     const subtotal = items.reduce((sum, item) => {
       return sum + (item.product.price as number) * item.quantity;
     }, 0);
-    total = `GH₵${subtotal.toFixed(2)}`;
+    total = `${currency}${subtotal.toFixed(2)}`;
   } else {
     total = "To be confirmed.";
   }
 
   const lines = [
-    "Hello Kiki's Touch Beauty Salon,",
+    `Hello ${businessName},`,
     "",
     "I would like to order:",
     "",
@@ -69,7 +91,7 @@ export function buildOrderMessage(items: CartItem[]): string {
 }
 
 export function calculateCartTotal(items: CartItem[]): number | null {
-  if (items.some((item) => item.product.price === null)) return null;
+  if (items.some((item) => item.product.price === null || item.product.price === undefined)) return null;
   return items.reduce(
     (sum, item) => sum + (item.product.price as number) * item.quantity,
     0

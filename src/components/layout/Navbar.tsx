@@ -4,6 +4,7 @@ import { useState, useEffect } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import { usePathname } from "next/navigation";
+import { useBusinessSettings } from "@/lib/useBusinessSettings";
 import CartButton from "@/components/cart/CartButton";
 import CartDrawer from "@/components/cart/CartDrawer";
 import MobileMenu from "./MobileMenu";
@@ -22,6 +23,7 @@ export default function Navbar() {
   const [cartOpen, setCartOpen] = useState(false);
   const [scrolled, setScrolled] = useState(false);
   const pathname = usePathname();
+  const { settings } = useBusinessSettings();
 
   if (pathname.startsWith('/admin')) {
     return null;
@@ -50,11 +52,11 @@ export default function Navbar() {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex items-center justify-between h-16 lg:h-20">
             {/* Logo */}
-            <Link href="/" className="flex items-center gap-2.5 shrink-0" aria-label="Kiki's Touch Beauty Salon — Home">
+            <Link href="/" className="flex items-center gap-2.5 shrink-0" aria-label={`${settings.business_name} — Home`}>
               <div className="relative w-10 h-10 lg:w-12 lg:h-12">
                 <Image
-                  src="/images/logo/kikis-touch-logo.png"
-                  alt="Kiki's Touch Logo"
+                  src={settings.logo_url || "/images/logo/kikis-touch-logo.png"}
+                  alt={settings.business_name}
                   fill
                   className="object-contain"
                   priority
@@ -62,7 +64,7 @@ export default function Navbar() {
               </div>
               <div className="hidden sm:block leading-tight">
                 <span className="block font-heading text-purple font-semibold text-lg lg:text-xl leading-none">
-                  Kiki&apos;s Touch
+                  {settings.business_name.split(" Beauty")[0] || "Kiki's Touch"}
                 </span>
                 <span className="block font-body text-muted text-[10px] lg:text-xs tracking-[0.15em] uppercase">
                   Beauty Salon

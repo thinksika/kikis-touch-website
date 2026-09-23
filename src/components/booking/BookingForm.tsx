@@ -6,8 +6,9 @@ import { getServicesFromSupabase } from "@/lib/supabase-data";
 import { services as staticServices } from "@/data/services";
 import { Service, BookingFormData } from "@/types";
 import { supabase } from "@/lib/supabase";
+import { useBusinessSettings } from "@/lib/useBusinessSettings";
 import { buildBookingMessage, openWhatsApp } from "@/lib/whatsapp";
-import { Send, RefreshCw } from "lucide-react";
+import { Send, RefreshCw, AlertCircle } from "lucide-react";
 
 const timeSlots = [
   "9:00 AM", "10:00 AM", "11:00 AM", "12:00 PM",
@@ -30,6 +31,9 @@ export default function BookingForm() {
   const [errors, setErrors] = useState<Partial<BookingFormData>>({});
   const [servicesList, setServicesList] = useState<Service[]>(staticServices);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [dateWarning, setDateWarning] = useState<string | null>(null);
+
+  const { settings, hours, overrides } = useBusinessSettings();
 
   useEffect(() => {
     async function fetchServices() {
@@ -47,6 +51,33 @@ export default function BookingForm() {
     }
   }, [searchParams]);
 
+  // Check date against overrides & business hours when date changes
+  useEffect(() => {
+    if (!form.date) {
+      setDateWarning(null);
+      return;
+    }
+
+    // Check availability override
+    const override = overrides.find((o) => o.override_date === form.date);
+    if (override && override.is_closed) {
+      setDateWarning(`Notice: We are closed on ${form.date} (${override.reason || "Scheduled closure"}). Please select another date.`);
+      return;
+    }
+
+    // Check normal day of week hours
+    const selectedDayObj = new Date(form.date);
+    const dayOfWeek = selectedDayObj.getDay(); // 0 = Sunday, 1 = Monday...
+    const daySchedule = hours.find((h) => h.id === dayOfWeek);
+
+    if (daySchedule && !daySchedule.is_open) {
+      setDateWarning(`Notice: We are normally closed on ${daySchedule.day_name}s. Please select an available working day.`);
+      return;
+    }
+
+    setDateWarning(null);
+  }, [form.date, overrides, hours]);
+
   function validate(): boolean {
     const newErrors: Partial<BookingFormData> = {};
     if (!form.fullName.trim()) newErrors.fullName = "Please enter your full name.";
@@ -54,6 +85,8 @@ export default function BookingForm() {
     if (!form.service) newErrors.service = "Please select a service.";
     if (!form.date) newErrors.date = "Please select a date.";
     if (!form.time) newErrors.time = "Please select a time.";
+    if (dateWarning) newErrors.date = "Selected date is unavailable.";
+
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   }
@@ -74,7 +107,7 @@ export default function BookingForm() {
 
     setIsSubmitting(true);
     try {
-      // Save booking to Supabase database so admin receives it in dashboard
+      // Save booking request to Supabase database for admin verification
       await supabase.from("bookings").insert({
         customer_name: form.fullName.trim(),
         customer_phone: form.phone.trim(),
@@ -82,6 +115,7 @@ export default function BookingForm() {
         booking_date: form.date,
         booking_time: form.time,
         notes: form.note.trim() || null,
+        deposit_amount: settings.booking_deposit_amount || 50,
         deposit_status: "pending",
         status: "pending",
       });
@@ -91,8 +125,13 @@ export default function BookingForm() {
       setIsSubmitting(false);
     }
 
-    const message = buildBookingMessage(form);
-    openWhatsApp(message);
+    const message = buildBookingMessage(
+      form,
+      settings.business_name,
+      settings.booking_deposit_amount,
+      settings.currency
+    );
+    openWhatsApp(message, settings.whatsapp_number);
   }
 
   // Minimum date = today
@@ -170,7 +209,7 @@ export default function BookingForm() {
           <option value="">Select a service</option>
           {servicesList.map((s) => (
             <option key={s.id} value={s.name}>
-              {s.name}
+              {s.name} {s.price ? `(${settings.currency}${s.price})` : ''}
             </option>
           ))}
         </select>
@@ -195,7 +234,7 @@ export default function BookingForm() {
             value={form.date}
             onChange={handleChange}
             min={today}
-            className={fieldClass(errors.date)}
+            className={fieldClass(errors.date || (dateWarning ? 'border-red-400' : undefined))}
             aria-describedby={errors.date ? "date-error" : undefined}
             aria-invalid={!!errors.date}
           />
@@ -235,6 +274,14 @@ export default function BookingForm() {
         </div>
       </div>
 
+      {/* Date Availability Warning Banner */}
+      {dateWarning && (
+        <div className="p-3 bg-amber-50 border border-amber-200 rounded-xl text-amber-800 text-xs flex items-center gap-2">
+          <AlertCircle size={16} className="shrink-0 text-amber-600" />
+          <span>{dateWarning}</span>
+        </div>
+      )}
+
       {/* Note */}
       <div>
         <label htmlFor="note" className="block font-body text-xs font-medium text-ink mb-1.5 tracking-wide">
@@ -256,23 +303,23 @@ export default function BookingForm() {
       <div className="pt-2">
         <button
           type="submit"
-          disabled={isSubmitting}
-          className="w-full flex items-center justify-center gap-2.5 bg-purple text-white font-body font-semibold py-4 rounded-full hover:bg-purple-light active:scale-[0.98] transition-all duration-200"
+          disabled={isSubmitting || !!dateWarning}
+          className="w-full flex items-center justify-center gap-2.5 bg-purple text-white font-body font-semibold py-4 rounded-full hover:bg-purple-light active:scale-[0.98] transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
         >
           {isSubmitting ? (
             <>
               <RefreshCw size={17} className="animate-spin" />
-              Processing...
+              Processing Request...
             </>
           ) : (
             <>
               <Send size={17} />
-              Send via WhatsApp
+              {settings.booking_cta_text || "Send via WhatsApp"}
             </>
           )}
         </button>
         <p className="font-body text-xs text-muted text-center mt-3">
-          A GH₵50 deposit is required to secure your appointment.
+          A {settings.currency}{settings.booking_deposit_amount} deposit is required to secure your appointment.
         </p>
       </div>
     </form>

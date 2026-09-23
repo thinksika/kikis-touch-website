@@ -1,12 +1,15 @@
-import { Phone, Mail, MapPin, Clock, MessageCircle, ExternalLink, Navigation } from "lucide-react";
-import { WHATSAPP_BASE } from "@/lib/whatsapp";
+"use client";
 
-const GOOGLE_MAPS_URL = "https://maps.app.goo.gl/cYdLK7PJLBu15iGF7";
+import { Phone, Mail, MapPin, Clock, MessageCircle, ExternalLink, Navigation } from "lucide-react";
+import { useBusinessSettings } from "@/lib/useBusinessSettings";
+import { formatWhatsAppLink } from "@/lib/whatsapp";
 
 export default function ContactSection() {
-  const whatsappUrl = `${WHATSAPP_BASE}?text=${encodeURIComponent(
-    "Hello Kiki's Touch Beauty Salon!"
-  )}`;
+  const { settings, hours } = useBusinessSettings();
+  const whatsappUrl = formatWhatsAppLink(settings.whatsapp_number);
+
+  const openDays = hours.filter((h) => h.is_open);
+  const sunday = hours.find((h) => h.id === 0 || h.day_name === "Sunday");
 
   return (
     <section className="section-padding bg-cream" id="contact">
@@ -20,7 +23,7 @@ export default function ContactSection() {
             Contact Us
           </h2>
           <p className="font-body text-muted text-base mt-3">
-            Reach out anytime or visit us at our salon in Sowutoum, Ghana.
+            Reach out anytime or visit us at our salon in {settings.location_address}.
           </p>
         </div>
 
@@ -36,14 +39,14 @@ export default function ContactSection() {
                 Phone
               </p>
               <a
-                href="tel:+233543603627"
+                href={`tel:${settings.phone_number.replace(/\s+/g, "")}`}
                 className="font-heading text-purple text-xl font-semibold hover:text-plum transition-colors"
               >
-                054 360 3627
+                {settings.phone_number}
               </a>
             </div>
             <a
-              href="tel:+233543603627"
+              href={`tel:${settings.phone_number.replace(/\s+/g, "")}`}
               className="mt-auto inline-flex items-center justify-center gap-2 border border-purple text-purple font-body text-sm font-medium py-2.5 px-5 rounded-full hover:bg-lavender-light transition-colors"
             >
               <Phone size={14} />
@@ -61,11 +64,11 @@ export default function ContactSection() {
                 WhatsApp
               </p>
               <p className="font-heading text-purple text-xl font-semibold">
-                054 360 3627
+                {settings.phone_number}
               </p>
             </div>
             <a
-              href={whatsappUrl}
+              href={`${whatsappUrl}?text=${encodeURIComponent(`Hello ${settings.business_name}!`)}`}
               target="_blank"
               rel="noopener noreferrer"
               className="mt-auto inline-flex items-center justify-center gap-2 bg-[#25D366] text-white font-body text-sm font-medium py-2.5 px-5 rounded-full hover:bg-[#1fbc5a] transition-colors"
@@ -85,14 +88,14 @@ export default function ContactSection() {
                 Email
               </p>
               <a
-                href="mailto:Sarpongkesh@gmail.com"
+                href={`mailto:${settings.email_address}`}
                 className="font-heading text-purple text-lg font-semibold hover:text-plum transition-colors break-all"
               >
-                Sarpongkesh@gmail.com
+                {settings.email_address}
               </a>
             </div>
             <a
-              href="mailto:Sarpongkesh@gmail.com"
+              href={`mailto:${settings.email_address}`}
               className="mt-auto inline-flex items-center justify-center gap-2 border border-purple text-purple font-body text-sm font-medium py-2.5 px-5 rounded-full hover:bg-lavender-light transition-colors"
             >
               <Mail size={14} />
@@ -114,7 +117,7 @@ export default function ContactSection() {
                   Location
                 </p>
                 <p className="font-heading text-purple text-xl font-semibold">
-                  Sowutoum, Ghana
+                  {settings.location_address}
                 </p>
                 <p className="font-body text-xs text-muted mt-1">
                   Official Salon Location
@@ -123,11 +126,11 @@ export default function ContactSection() {
             </div>
 
             <a
-              href={GOOGLE_MAPS_URL}
+              href={settings.google_maps_url}
               target="_blank"
               rel="noopener noreferrer"
               className="mt-6 inline-flex items-center justify-center gap-2 bg-purple text-white font-body text-sm font-medium py-3 px-6 rounded-full hover:bg-purple-light transition-all shadow-sm"
-              aria-label="Get Directions to Kiki's Touch Beauty Salon on Google Maps"
+              aria-label={`Get Directions to ${settings.business_name} on Google Maps`}
             >
               <Navigation size={15} />
               Get Directions
@@ -148,10 +151,10 @@ export default function ContactSection() {
                 Monday – Saturday
               </p>
               <p className="font-body text-sm text-purple font-semibold">
-                9:00 AM – 8:00 PM
+                {openDays.length > 0 ? `${openDays[0]?.open_time?.slice(0, 5)} – ${openDays[0]?.close_time?.slice(0, 5)}` : "9:00 AM – 8:00 PM"}
               </p>
               <p className="font-body text-sm text-muted mt-1">
-                Sunday — Closed
+                Sunday — {sunday?.is_open ? `${sunday.open_time?.slice(0, 5)} – ${sunday.close_time?.slice(0, 5)}` : "Closed"}
               </p>
             </div>
           </div>
@@ -166,16 +169,16 @@ export default function ContactSection() {
                 <span>Google Maps Location</span>
               </div>
               <h3 className="font-heading text-purple text-2xl sm:text-3xl font-semibold">
-                Find Kiki&apos;s Touch Beauty Salon
+                Find {settings.business_name}
               </h3>
               <p className="font-body text-muted text-sm max-w-md">
-                Located in Sowutoum, Ghana. Open Google Maps to get turn-by-turn navigation directly to our salon doors.
+                Located in {settings.location_address}. Open Google Maps to get turn-by-turn navigation directly to our salon doors.
               </p>
             </div>
 
             <div className="shrink-0 w-full md:w-auto">
               <a
-                href={GOOGLE_MAPS_URL}
+                href={settings.google_maps_url}
                 target="_blank"
                 rel="noopener noreferrer"
                 className="w-full md:w-auto inline-flex items-center justify-center gap-2.5 bg-[#C5A059] hover:bg-[#b08c46] text-black font-body text-sm font-semibold py-3.5 px-8 rounded-full transition-all shadow-md active:scale-[0.98]"

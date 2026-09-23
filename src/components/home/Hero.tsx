@@ -4,9 +4,15 @@ import Image from "next/image";
 import Link from "next/link";
 import { motion } from "framer-motion";
 import { MessageCircle, ArrowRight } from "lucide-react";
-import { WHATSAPP_BASE } from "@/lib/whatsapp";
+import { useBusinessSettings } from "@/lib/useBusinessSettings";
+import { formatWhatsAppLink } from "@/lib/whatsapp";
 
 export default function Hero() {
+  const { settings, hours } = useBusinessSettings();
+  const whatsappUrl = formatWhatsAppLink(settings.whatsapp_number);
+
+  const openDays = hours.filter((h) => h.is_open);
+
   return (
     <section className="relative min-h-[100svh] flex items-center pt-16 lg:pt-20 overflow-hidden bg-cream">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 w-full">
@@ -26,7 +32,7 @@ export default function Hero() {
               animate={{ opacity: 1 }}
               transition={{ delay: 0.2, duration: 0.6 }}
             >
-              Sowutoum, Ghana
+              {settings.location_address || "Sowutoum, Ghana"}
             </motion.p>
 
             {/* Headline */}
@@ -36,9 +42,19 @@ export default function Hero() {
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.15, duration: 0.7 }}
             >
-              Kiki&apos;s Touch
-              <br />
-              <span className="text-plum italic">Beauty Salon</span>
+              {settings.hero_title ? (
+                <>
+                  {settings.hero_title.split(" Beauty")[0]}
+                  <br />
+                  <span className="text-plum italic">Beauty Salon</span>
+                </>
+              ) : (
+                <>
+                  Kiki&apos;s Touch
+                  <br />
+                  <span className="text-plum italic">Beauty Salon</span>
+                </>
+              )}
             </motion.h1>
 
             {/* Body text */}
@@ -48,8 +64,7 @@ export default function Hero() {
               animate={{ opacity: 1 }}
               transition={{ delay: 0.3, duration: 0.6 }}
             >
-              Beautiful braids, professional beauty services and quality hair
-              products.
+              {settings.hero_subtitle || "Beautiful braids, professional beauty services and quality hair products."}
             </motion.p>
 
             {/* CTAs */}
@@ -60,19 +75,19 @@ export default function Hero() {
               transition={{ delay: 0.4, duration: 0.6 }}
             >
               <a
-                href={`${WHATSAPP_BASE}?text=${encodeURIComponent("Hello Kiki's Touch Beauty Salon, I'd like to book an appointment.")}`}
+                href={`${whatsappUrl}?text=${encodeURIComponent(`Hello ${settings.business_name}, I'd like to book an appointment.`)}`}
                 target="_blank"
                 rel="noopener noreferrer"
                 className="inline-flex items-center justify-center gap-2.5 bg-purple text-white font-body font-medium px-7 py-4 rounded-full hover:bg-purple-light active:scale-[0.98] transition-all duration-200 text-sm sm:text-base"
               >
                 <MessageCircle size={18} />
-                Book via WhatsApp
+                {settings.booking_cta_text || "Book via WhatsApp"}
               </a>
               <Link
                 href="/shop"
                 className="inline-flex items-center justify-center gap-2 border border-purple text-purple font-body font-medium px-7 py-4 rounded-full hover:bg-lavender-light active:scale-[0.98] transition-all duration-200 text-sm sm:text-base"
               >
-                Shop Products
+                {settings.shop_cta_text || "Shop Products"}
                 <ArrowRight size={16} />
               </Link>
             </motion.div>
@@ -84,7 +99,7 @@ export default function Hero() {
               animate={{ opacity: 1 }}
               transition={{ delay: 0.55, duration: 0.6 }}
             >
-              GH₵50 deposit required to secure your appointment.
+              {settings.currency}{settings.booking_deposit_amount} deposit required to secure your appointment.
             </motion.p>
           </motion.div>
 
@@ -98,13 +113,12 @@ export default function Hero() {
             <div className="relative w-full aspect-[4/5] max-h-[85vh] rounded-3xl overflow-hidden shadow-soft-lg">
               <Image
                 src="/images/hero/hero-main.jpg"
-                alt="Beautiful woman with knotless braids at Kiki's Touch Beauty Salon"
+                alt={`Beautiful styles at ${settings.business_name}`}
                 fill
                 className="object-cover object-top"
                 priority
                 sizes="(max-width: 1024px) 100vw, 50vw"
               />
-              {/* Subtle gold overlay at bottom */}
               <div className="absolute inset-x-0 bottom-0 h-24 bg-gradient-to-t from-black/20 to-transparent pointer-events-none" />
             </div>
 
@@ -119,7 +133,7 @@ export default function Hero() {
                 Mon – Sat
               </p>
               <p className="font-body text-muted text-xs mt-0.5">
-                9:00 AM – 8:00 PM
+                {openDays.length > 0 ? `${openDays[0]?.open_time?.slice(0, 5)} – ${openDays[0]?.close_time?.slice(0, 5)}` : "9:00 AM – 8:00 PM"}
               </p>
             </motion.div>
           </motion.div>
